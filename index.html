@@ -314,7 +314,7 @@
       <div class="topbar">
         <header>
           <div class="brand">
-            <h1>Farsi Practice Lab</h1>
+            <h1>In context: A Farsi Practice Lab by سیامک</h1>
             <p>Ink & Paper home: clean launch pad + sane defaults. We’re keeping it snappy, not bureaucratic.</p>
           </div>
           <div class="controls">
@@ -333,10 +333,10 @@
           <div class="hero">
             <div class="heroText">
               <h2>Practice vocab in <span class="accent">context</span>.</h2>
-              <p>Pick your deck, drill fast, move on with your life. Navigation below is the real “go do stuff” area.</p>
+              <p id="welcomeMsg">$REF{SELECT_WELCOME_MESSAGE}</p>
             </div>
             <div class="cta">
-              <a class="btn" id="selectDeckBtn" href="./decks/index.html"><span class="dot"></span>Select deck</a>
+              <a class="btn" id="selectDeckBtn" href="./decks/index.html"><span class="dot"></span>select decks</a>
               <button class="btn" id="optionsBtn" type="button"><span class="dot"></span>Options</button>
             </div>
           </div>
@@ -350,7 +350,7 @@
               <span class="badge">last deck</span>
             </a>
             <a class="btn navBtn" id="navSelectDeck" href="./decks/index.html">
-              <span class="navLeft"><span class="dot"></span>Select deck</span>
+              <span class="navLeft"><span class="dot"></span>select decks</span>
               <span class="badge">choose</span>
             </a>
             <a class="btn navBtn" id="navLessons" href="./lessons/index.html">
@@ -453,6 +453,61 @@
     // --- Keys (shared with quiz page later) ---
     const THEME_KEY = "fpl_theme";
     const LAST_DECK_KEY = "fpl_lastDeck";
+
+    // --- Welcome message (random per visit) ---
+    const WELCOME_TOKEN = "$REF{SELECT_WELCOME_MESSAGE}";
+    const WELCOME_LAST_IDX_KEY = "fpl_welcomeLastIdx";
+
+    // Edit these freely.
+    const WELCOME_MESSAGES = [
+      "Warm up your brain: pick a deck and go.",
+      "New day, new words. Your future self will thank you, hopefully in farsi.",
+      "Context is king. Vocab without sentences is just confetti.",
+      "Two minutes now beats two hours of regret later.",
+      "Pick a deck. Practice. Become mildly unstoppable.",
+      "Failure is the path too mastery.",
+      "حالا شروع کن — your only job is to start.",
+      "If you can scroll, you can study. Tragic but true.",
+      "Small wins stack. One deck at a time.",
+      "Back for more?",
+      "It's good to see you again!",
+      "Ready to give your goals the persian fist?",
+      "Another day, another deck.",
+      "Glad you're back! Ready to get smarter?",
+    ];
+
+    function setRandomWelcomeMessage(){
+      const el = document.getElementById("welcomeMsg");
+      if(!el) return;
+
+      const current = (el.textContent || "").trim();
+      const shouldReplace =
+        current === "" ||
+        current.includes("SELECT_WELCOME_MESSAGE") ||
+        current.includes(WELCOME_TOKEN);
+
+      if(!shouldReplace) return;
+
+      const n = WELCOME_MESSAGES.length;
+      if(n === 0) return;
+
+      const lastRaw = lsGet(WELCOME_LAST_IDX_KEY, "-1");
+      const lastIdx = Number.isFinite(parseInt(lastRaw, 10)) ? parseInt(lastRaw, 10) : -1;
+
+      let idx = Math.floor(Math.random() * n);
+      if(n > 1 && idx === lastIdx){
+        // Avoid repeating the previous message.
+        idx = (idx + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      }
+
+      lsSet(WELCOME_LAST_IDX_KEY, String(idx));
+
+      const lastDeck = getLastDeck();
+      const deckName = lastDeck ? lastDeck.name : "a deck";
+      const msg = String(WELCOME_MESSAGES[idx]).replaceAll("{deck}", deckName);
+
+      el.textContent = msg;
+    }
 
     const TIMER_ENABLED_KEY = "fvq_timerEnabled";
     const TIMER_SECONDS_KEY = "fvq_timerSeconds";
@@ -690,6 +745,7 @@
     loadTheme();
     loadHaptics();
     updateStatus();
+    setRandomWelcomeMessage();
 
     $("#note").textContent = supportsVibrate
       ? "Haptics supported. Settings live in Options and persist locally."
